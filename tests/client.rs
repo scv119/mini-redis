@@ -36,7 +36,19 @@ async fn key_value_get_set() {
     client.set("hello", "world".into()).await.unwrap();
 
     let value = client.get("hello").await.unwrap().unwrap();
-    assert_eq!(b"world", &value[..])
+    assert_eq!(b"world", &value[..]);
+
+    let keys = vec![String::from("hello")]; 
+    let value = client.multiget(keys).await.unwrap();
+    assert_eq!(b"world", &value[0][..]);
+    assert_eq!(1, value.len());
+
+    let keys = vec![String::from("hello"), String::from("hello")]; 
+    let value = client.multiget(keys).await.unwrap();
+
+    assert_eq!(b"world", &value[0][..]);
+    assert_eq!(b"world", &value[1][..]);
+    assert_eq!(2, value.len());
 }
 
 /// similar to the "hello world" style test, But this time

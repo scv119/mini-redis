@@ -1,5 +1,10 @@
 mod get;
+
+
 pub use get::Get;
+
+mod multiget;
+pub use multiget::MultiGet;
 
 mod publish;
 pub use publish::Publish;
@@ -24,6 +29,7 @@ use crate::{Connection, Db, Frame, Parse, ParseError, Shutdown};
 #[derive(Debug)]
 pub enum Command {
     Get(Get),
+    MultiGet(MultiGet),
     Publish(Publish),
     Set(Set),
     Subscribe(Subscribe),
@@ -58,6 +64,7 @@ impl Command {
         // specific command.
         let command = match &command_name[..] {
             "get" => Command::Get(Get::parse_frames(&mut parse)?),
+            "multiget" => Command::MultiGet(MultiGet::parse_frames(&mut parse)?),
             "publish" => Command::Publish(Publish::parse_frames(&mut parse)?),
             "set" => Command::Set(Set::parse_frames(&mut parse)?),
             "subscribe" => Command::Subscribe(Subscribe::parse_frames(&mut parse)?),
@@ -97,6 +104,7 @@ impl Command {
 
         match self {
             Get(cmd) => cmd.apply(db, dst).await,
+            MultiGet(cmd) => cmd.apply(db, dst).await,
             Publish(cmd) => cmd.apply(db, dst).await,
             Set(cmd) => cmd.apply(db, dst).await,
             Subscribe(cmd) => cmd.apply(db, dst, shutdown).await,
@@ -112,6 +120,7 @@ impl Command {
     pub(crate) fn get_name(&self) -> &str {
         match self {
             Command::Get(_) => "get",
+            Command::MultiGet(_) => "multiget",
             Command::Publish(_) => "pub",
             Command::Set(_) => "set",
             Command::Subscribe(_) => "subscribe",

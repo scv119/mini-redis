@@ -2,7 +2,7 @@
 //!
 //! Provides an async connect and methods for issuing the supported commands.
 
-use crate::cmd::{Get, Ping, Publish, Set, Subscribe, Unsubscribe};
+use crate::cmd::{Get, MultiGet, Ping, Publish, Set, Subscribe, Unsubscribe};
 use crate::{Connection, Frame};
 
 use async_stream::try_stream;
@@ -160,6 +160,35 @@ impl Client {
             Frame::Simple(value) => Ok(Some(value.into())),
             Frame::Bulk(value) => Ok(Some(value)),
             Frame::Null => Ok(None),
+            frame => Err(frame.to_error()),
+        }
+    }
+
+    #[instrument(skip(self))]
+    pub async fn multiget(&mut self, keys: Vec<String>) -> crate::Result<Vec<Bytes>> {
+        // Create a `Get` command for the `key` and convert it to a frame.
+        let frame = MultiGet::new(keys).into_frame();
+
+        debug!(request = ?frame);
+
+        // Write the frame to the socket. This writes the full frame to the
+        // socket, waiting if necessary.
+        self.connection.write_frame(&frame).await?;
+
+        // Wait for the response from the server
+        //
+        // Both `Simple` and `Bulk` frames are accepted. `Null` represents the
+        // key not being present and `None` is returned.
+        match self.read_response().await? {
+            Frame::Array(values) => {
+                let mapper = |f: Frame| match f {
+                    Frame::Bulk(b) => b,
+                    _ => {
+                        panic!("unexpected frame: {}", f);
+                    },
+                };
+                Ok(values.into_iter().map(mapper).collect::<Vec<_>>())
+            },
             frame => Err(frame.to_error()),
         }
     }
