@@ -73,8 +73,7 @@ impl MultiGet {
             if let Some(value) = db.get(&key) {
                 response.push_bulk(value);
             } else {
-                // If there is no value, `Null` is written.
-                response.push_bulk(bytes::Bytes::new());
+                response.push_null();
             }
         }
         debug!(?response);

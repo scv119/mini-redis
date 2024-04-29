@@ -48,6 +48,15 @@ impl Frame {
         }
     }
 
+    pub(crate) fn push_null(&mut self) {
+        match self {
+            Frame::Array(vec) => {
+                vec.push(Frame::Null);
+            }
+            _ => panic!("not an array frame"),
+        }
+    }
+
     /// Push an "integer" frame into the array. `self` must be an Array frame.
     ///
     /// # Panics

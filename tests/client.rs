@@ -40,15 +40,16 @@ async fn key_value_get_set() {
 
     let keys = vec![String::from("hello")]; 
     let value = client.multiget(keys).await.unwrap();
-    assert_eq!(b"world", &value[0][..]);
+    assert_eq!(b"world", &value[0].as_ref().unwrap()[..]);
     assert_eq!(1, value.len());
 
-    let keys = vec![String::from("hello"), String::from("hello")]; 
+    let keys = vec![String::from("hello"), String::from("hello"), String::from("world")]; 
     let value = client.multiget(keys).await.unwrap();
 
-    assert_eq!(b"world", &value[0][..]);
-    assert_eq!(b"world", &value[1][..]);
-    assert_eq!(2, value.len());
+    assert_eq!(b"world", &value[0].as_ref().expect("")[..]);
+    assert_eq!(b"world", &value[1].as_ref().expect("")[..]);
+    assert!(value[2].is_none());
+    assert_eq!(3, value.len());
 }
 
 /// similar to the "hello world" style test, But this time

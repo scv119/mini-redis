@@ -165,7 +165,7 @@ impl Client {
     }
 
     #[instrument(skip(self))]
-    pub async fn multiget(&mut self, keys: Vec<String>) -> crate::Result<Vec<Bytes>> {
+    pub async fn multiget(&mut self, keys: Vec<String>) -> crate::Result<Vec<Option<Bytes>>> {
         // Create a `Get` command for the `key` and convert it to a frame.
         let frame = MultiGet::new(keys).into_frame();
 
@@ -182,9 +182,11 @@ impl Client {
         match self.read_response().await? {
             Frame::Array(values) => {
                 let mapper = |f: Frame| match f {
-                    Frame::Bulk(b) => b,
+                    Frame::Bulk(b) => Some(b),
+                    Frame::Null => None,
                     _ => {
-                        panic!("unexpected frame: {}", f);
+                        eprint!("unexpected frame: {}", f);
+                        None
                     },
                 };
                 Ok(values.into_iter().map(mapper).collect::<Vec<_>>())
